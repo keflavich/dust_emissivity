@@ -26,7 +26,9 @@ def blackbody_wavelength(lam,temperature):
     return I
 
 def modified_blackbody(nu, temperature, beta=1.75, column=1e22*u.cm**-2,
-                       muh2=2.8, kappa0=4.0*u.cm**2*u.g**-1,
+                       muh2=2.8, 
+                       kappanu=None,
+                       kappa0=4.0*u.cm**2*u.g**-1,
                        nu0=505*u.GHz, dusttogas=100.):
     """
     Snu =  2hnu^3 c^-2  (e^(hnu/kT) - 1)^-1  (1 - e^(-tau_nu) )
@@ -70,7 +72,9 @@ def modified_blackbody(nu, temperature, beta=1.75, column=1e22*u.cm**-2,
         get the opacity of the dust
     """
 
-    kappanu = kappa0 / dusttogas * (nu/nu0)**beta
+    if kappanu is None:
+        kappanu = kappa0 / dusttogas * (nu/nu0)**beta
+    
     # numpy apparently can't multiply floats and longs
     tau = muh2 * constants.m_p * kappanu * column
 

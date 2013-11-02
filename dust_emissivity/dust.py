@@ -9,10 +9,32 @@ from astropy import units as u
 from numpy import exp,log
 
 def kappa(nu, nu0=271.1*u.GHz, kappa0=0.0114*u.cm**2*u.g**-1, beta=1.75):
-    return kappa0*(nu.to(u.GHz)/nu0)**(beta)
+    """
+    Compute the opacity $\kappa$ given a reference frequency (or wavelength)
+    and a power law governing the opacity as a fuction of frequency:
+
+    $$ \kappa = \kappa_0 \left(\\frac{\\nu}{\\nu_0}\\right)^{\\beta} $$
+
+    Parameters
+    ----------
+    nu: astropy.Quantity [u.spectral() equivalent]
+        The frequency at which to evaluate kappa
+    nu0: astropy.Quantity [u.spectral() equivalent]
+        The reference frequency at which $\kappa$ is defined
+    kappa0: astropy.Quantity [cm^2/g]
+        The dust opacity per gram of H2 along the line of sight.  Because of
+        the H2 conversion, this factor implicitly includes a dust to gas ratio
+        (usually assumed 100)
+    beta: float
+        The power-law index governing kappa as a function of nu
+    """
+    return (kappa0*(nu.to(u.GHz,u.spectral())/nu0.to(u.GHz,u.spectral()))**(beta)).to(u.cm**2/u.g)
 
 def snu(nu, column, kappa, temperature):
-    snu = blackbody.blackbody(nu, temperature, normalize=False)
+    """
+    Compute the flux density for a given column of gas assuming some opacity kappa
+    """
+    snu = blackbody.modified_blackbody(nu, temperature, kappanu=kappa, column=column)
     return snu
 
 def snudnu(nu, column, kappa, temperature, bandwidth):
