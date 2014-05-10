@@ -25,7 +25,7 @@ def fit_modified_bb(xdata, flux, error, guesses, fitter='lmfit',
     guesses : (Temperature,Beta,Column)
         The input guesses.  Temperature and Column should have units of K and
         cm**-2 respectively
-    fitter: 'lmfit' or 'mpfit'
+    fitter: 'lmfit', 'mpfit', or 'montecarlo'
         The fitter backend to use
     return_error: bool
         Optional argument whether the errors should be returned
@@ -97,8 +97,28 @@ def fit_modified_bb(xdata, flux, error, guesses, fitter='lmfit',
             return pars, perrs
         else:
             return pars
+    elif fitter == 'montecarlo':
+        mc = fit_modifiedbb_montecarlo(x, fx, err=err,
+                                       temperature_guess=guesses[0],
+                                       beta_guess=guesses[1],
+                                       column_guess=guesses[2],
+                                       return_MC=True)
+        stats = [mc.temperature.stats(),
+                 mc.beta.stats(),
+                 mc.column.stats()]
+        pars = [stats[0]['mean']*u.K,
+                stats[1]['mean'],
+                stats[2]['mean']*u.cm**-2]
+        if return_error:
+            perrs = [stats[0]['standard deviation'] * u.K,
+                     stats[1]['standard deviation'],
+                     stats[2]['standard deviation']*u.cm**-2]
+
+            return pars, perrs
+        else:
+            return pars
     else:
-        raise ValueError("Fitter type must be one of mpfit, lmfit")
+        raise ValueError("Fitter type must be one of mpfit, lmfit, montecarlo")
 
 
 
@@ -114,7 +134,7 @@ def fit_sed_mpfit_hz(xdata, flux, guesses=(0,0), err=None,
     flux : array
         The fluxes corresponding to the xdata values.  Should be in
         erg/s/cm^2/Hz
-    guesses : (Temperature,Scale) or (Temperature,Beta,Scale)
+    guesses : (Temperature,Column) or (Temperature,Beta,Column)
         The input guesses.  3 parameters are used for modified blackbody
         fitting, two for temperature fitting.
     blackbody_function: str
@@ -198,7 +218,7 @@ def fit_sed_lmfit_hz(xdata, flux, guesses=(0,0), err=None,
     flux : array
         The fluxes corresponding to the xdata values.  Should be in
         erg/s/cm^2/Hz
-    guesses : (Temperature,Scale) or (Temperature,Beta,Scale)
+    guesses : (Temperature,Column) or (Temperature,Beta,Column)
         The input guesses.  3 parameters are used for modified blackbody
         fitting, two for temperature fitting.
     blackbody_function: str
@@ -286,15 +306,17 @@ def fit_sed_lmfit_hz(xdata, flux, guesses=(0,0), err=None,
     return minimizer
 
 
-def fit_blackbody_montecarlo(frequency, flux, err=None,
-                             temperature_guess=10, beta_guess=None,
-                             scale_guess=None,
-                             blackbody_function=blackbody, quiet=True,
-                             return_MC=False, nsamples=5000, burn=1000,
-                             min_temperature=0, max_temperature=100,
-                             scale_keyword='scale', max_scale=1e60,
-                             multivariate=False, **kwargs):
+def fit_modifiedbb_montecarlo(frequency, flux, err=None,
+                              temperature_guess=10, beta_guess=None,
+                              column_guess=None,
+                              quiet=True,
+                              return_MC=False, nsamples=5000, burn=1000,
+                              min_temperature=0, max_temperature=100,
+                              max_column=1e30,
+                              multivariate=False, **kwargs):
     """
+    An MCMC version of the fitter.
+
     Parameters
     ----------
     frequency : array
@@ -310,11 +332,8 @@ def fit_blackbody_montecarlo(frequency, flux, err=None,
         Lower/Upper limits on fitted temperature
     beta_guess : float (optional)
         Opacity beta value
-    scale_guess : float
-        Arbitrary scale value to apply to model to get correct answer
-    blackbody_function: function
-        Must take x-axis (e.g. frequency), temperature, then scale and beta
-        keywords (dependence on beta can be none)
+    column_guess : float
+        guess for the column density (cm^-2)
     return_MC : bool
         Return the pymc.MCMC object?
     nsamples : int
@@ -322,9 +341,6 @@ def fit_blackbody_montecarlo(frequency, flux, err=None,
         (the answer)
     burn : int
         number of initial samples to ignore
-    scale_keyword : ['scale','logscale','logN']
-        What scale keyword to pass to the blackbody function to determine
-        the amplitude
     kwargs : kwargs
         passed to blackbody function
     """
@@ -334,27 +350,28 @@ def fit_blackbody_montecarlo(frequency, flux, err=None,
     except ImportError:
         print("Cannot import pymc: cannot use pymc-based fitter.")
 
+    blackbody_function = _modified_blackbody_hz
 
     d = {}
     d['temperature'] = pymc.distributions.Uniform('temperature',
-            min_temperature, max_temperature, value=temperature_guess)
-    d['scale'] = pymc.distributions.Uniform('scale',0,max_scale,
-            value=scale_guess)
+                                                  min_temperature,
+                                                  max_temperature,
+                                                  value=temperature_guess)
+    d['column'] = pymc.distributions.Uniform('column',0,max_column,
+                                             value=column_guess)
     if beta_guess is not None:
-        d['beta'] = pymc.distributions.Uniform('beta',0,10,
-                value=beta_guess)
+        d['beta'] = pymc.distributions.Uniform('beta',0,10, value=beta_guess)
     else:
-        d['beta'] = pymc.distributions.Uniform('beta',0,0,
-                value=0)
+        d['beta'] = pymc.distributions.Uniform('beta',0,0, value=0)
 
 
     @pymc.deterministic
     def luminosity(temperature=d['temperature'], beta=d['beta'],
-                   scale=d['scale']):
+                   column=d['column']):
 
         from scipy.integrate import quad
-        f = lambda nu: blackbody_function(nu, temperature, logN=scale,
-                                          beta=beta)
+        f = lambda nu: blackbody_function(nu, temperature, beta=beta,
+                                          column=column, **kwargs)
         # integrate from 0.1 to 10,000 microns (100 angstroms to 1 cm)
         # some care should be taken; going from 0 to inf results in failure
         return quad(f, 1e4, 1e17)[0]
@@ -362,11 +379,10 @@ def fit_blackbody_montecarlo(frequency, flux, err=None,
     d['luminosity'] = luminosity
 
     @pymc.deterministic
-    def bb_model(temperature=d['temperature'], scale=d['scale'],
+    def bb_model(temperature=d['temperature'], column=d['column'],
                  beta=d['beta']):
-        kwargs[scale_keyword] = scale
         y = blackbody_function(frequency, temperature, beta=beta,
-                               **kwargs)
+                               column=column, **kwargs)
         #print kwargs,beta,temperature,(-((y-flux)**2)).sum()
         return y
 
@@ -381,7 +397,6 @@ def fit_blackbody_montecarlo(frequency, flux, err=None,
                                           tau=1./d['err']**2, value=flux,
                                           observed=True)
 
-    #print d.keys()
     MC = pymc.MCMC(d)
     
     if nsamples > 0:
@@ -392,12 +407,12 @@ def fit_blackbody_montecarlo(frequency, flux, err=None,
         MCfit = pymc.MAP(MC)
         MCfit.fit()
         T = MCfit.temperature.value
-        scale = MCfit.scale.value
+        column = MCfit.column.value
 
         if beta_guess is not None:
             beta = MCfit.beta.value
-            return T,scale,beta
+            return T,column,beta
         else:
-            return T,scale
+            return T,column
 
     return MC

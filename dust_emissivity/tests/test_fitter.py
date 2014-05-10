@@ -4,8 +4,10 @@ from astropy.tests.helper import pytest
 from ..blackbody import modified_blackbody
 from ..fit_sed import fit_modified_bb
 
-@pytest.mark.parametrize(('fitter',),('lmfit','mpfit'))
-def test_fit_modified_bb(fitter):
+@pytest.mark.parametrize(('fitter','precision'),
+                         zip(('lmfit','mpfit','montecarlo'),
+                             (8,8,2)))
+def test_fit_modified_bb(fitter, precision):
     wavelengths = np.array([20,70,160,250,350,500,850,1100]) * u.um
     frequencies = wavelengths.to(u.Hz, u.spectral())
     temperature = 15 * u.K
@@ -23,6 +25,6 @@ def test_fit_modified_bb(fitter):
 
     answer = np.array([1.50147255e+01,   1.77886818e+00,   1.05578825e+22])
     
-    np.testing.assert_approx_equal(answer[0], pars[0].value, significant=8)
-    np.testing.assert_approx_equal(answer[1], pars[1], significant=8)
-    np.testing.assert_approx_equal(answer[2], pars[2].value, significant=8)
+    np.testing.assert_approx_equal(answer[0], pars[0].value, significant=precision)
+    np.testing.assert_approx_equal(answer[1], pars[1], significant=precision)
+    np.testing.assert_approx_equal(answer[2], pars[2].value, significant=precision)
