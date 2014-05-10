@@ -28,7 +28,7 @@ Then, one can import:
 Documentation
 -------------
 
-There is an `example notebook <examples/Luminosity.html>`_ and docstrings
+There is an `example notebook <example/Luminosity.html>`_ and docstrings
 
 Github Things
 '''''''''''''
