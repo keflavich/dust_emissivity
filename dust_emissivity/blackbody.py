@@ -11,20 +11,65 @@ from numpy import exp
 from astropy import units as u
 from astropy import constants
 
+# Declare global constants with numeric values to allow for relatively
+# high-performance (low-overhead) use of astropy units
+_h = constants.h.cgs.value
+_c = constants.c.cgs.value
+_k_B = constants.k_B.cgs.value
+_m_p = constants.m_p.cgs.value
+
+# Globally define the unit of the blackbody function in CGS
+_bbunit_nu_cgs = u.erg/u.s/u.cm**2/u.Hz
+_bbunit_lam_cgs = u.erg/u.s/u.cm**2/u.cm
+
+
+def _blackbody_hz(nu, temperature):
+    """
+    Compute the Planck function given nu in Hz and temperature in K with output
+    in cgs
+    """
+    I = (2*_h*nu**3 / _c**2 * (exp(_h*nu/(_k_B*temperature)) - 1)**-1)
+
+    return I
+
 def blackbody(nu, temperature, outunit=u.erg/u.s/u.cm**2/u.Hz):
     """
     Planck's Law Blackbody (Frequency units)
     """
-    I = (2*constants.h*nu**3 / constants.c**2 *
-         (exp(constants.h*nu/(constants.k_B*temperature)) - 1)**-1)
+    I = _blackbody_hz(nu.to(u.Hz).value,
+                      temperature.to(u.K).value) * _bbunit_nu_cgs
 
     return I.to(outunit)
 
+def _blackbody_wavelength_cm(lam, temperature):
+    """
+    Compute the Planck function given wavelength in cm and temperature in K
+    with output in cgs
+    """
+    I = (2*_h*_c**2 / lam**5 * (exp(_h*_c/(_k_B*temperature*lam)) - 1)**-1)
+    return I
 
-def blackbody_wavelength(lam,temperature):
-    I = (2*constants.h*constants.c**2 / lam**5 *
-         (exp(constants.h*constants.c/(constants.k_B*temperature*lam)) -
-          1)**-1)
+def blackbody_wavelength(lam, temperature, outunit=u.erg/u.s/u.cm**2/u.AA):
+    I = _blackbody_wavelength_cm(lam.to(u.cm).value,
+                                 temperature.to(u.K).value) * _bbunit_lam_cgs
+
+    return I.to(outunit)
+
+def _modified_blackbody_hz(nu, temperature, beta, column, muh2=2.8, kappanu=None,
+                           kappa0=4.0, nu0=505e9, dusttogas=100.):
+    """
+    Numpy-only computation of the modified blackbody function.  Intended for
+    use during fitting and in other cases of high-performance needs
+    """
+    if kappanu is None:
+        kappanu = kappa0 / dusttogas * (nu/nu0)**beta
+    
+    # numpy apparently can't multiply floats and longs
+    tau = muh2 * _m_p * kappanu * column
+
+    modification = (1.0 - exp(-1.0 * tau))
+
+    I = _blackbody_hz(nu, temperature)*modification
 
     return I
 
@@ -75,17 +120,18 @@ def modified_blackbody(nu, temperature, beta=1.75, column=1e22*u.cm**-2,
         The dust to gas ratio.  The opacity kappa0 is divided by this number to
         get the opacity of the dust
     """
+    if kappanu is not None:
+        kappanu = kappanu.to(u.cm**2/u.g).value
 
-    if kappanu is None:
-        kappanu = kappa0 / dusttogas * (nu/nu0)**beta
-    
-    # numpy apparently can't multiply floats and longs
-    tau = muh2 * constants.m_p * kappanu * column
-
-    modification = (1.0 - exp(-1.0 * tau))
-
-    I = blackbody(nu, temperature)*modification
-
+    I = _modified_blackbody_hz(nu.to(u.Hz).value,
+                               temperature.to(u.K).value,
+                               beta,
+                               column.to(u.cm**-2).value,
+                               muh2,
+                               kappanu,
+                               kappa0.to(u.cm**2/u.g).value,
+                               nu0.to(u.Hz).value,
+                               dusttogas)*_bbunit_nu_cgs
     return I.to(outunit)
 
 def integrate_sed(vmin, vmax, function=blackbody, **kwargs):

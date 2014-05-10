@@ -38,6 +38,24 @@ def fit_modified_bb(xdata, flux, error, guesses, fitter='lmfit',
     errors : list
         (optional: see return_error)
         The errors corresponding to the fitted parameters
+
+    Example
+    -------
+    >>> from astropy import units as u
+    >>> import numpy as np
+    >>> wavelengths = np.array([20,70,160,250,350,500,850,1100]) * u.um
+    >>> frequencies = wavelengths.to(u.Hz, u.spectral())
+    >>> temperature = 15 * u.K
+    >>> column = 1e22 * u.cm**-2
+    >>> flux = modified_blackbody(frequencies, temperature, beta=1.75,
+    ...                           column=column)
+    >>> err = 0.1 * flux
+    >>> np.random.seed(0)
+    >>> noise = np.random.randn(frequencies.size) * err
+    >>> tguess, bguess, nguess = 20.*u.K,2.,21.5*u.cm**-2
+    >>> bbunit = u.erg/u.s/u.cm**2/u.Hz
+    >>> pars = fit_modified_bb(frequencies, flux+noise, err,
+    ...                        guesses=(tguess, bguess, nguess))
     """
 
     bbunit = u.erg/u.cm**2/u.s/u.Hz
@@ -53,13 +71,13 @@ def fit_modified_bb(xdata, flux, error, guesses, fitter='lmfit',
         lm = fit_sed_lmfit_hz(xdata=x, flux=fx, guesses=guesses, err=err,
                               blackbody_function='modified', **kwargs)
 
-        pars = [lm.params[0].value * u.K,
-                lm.params[1].value,
-                lm.params[2].value * u.cm**-2]
+        pars = [lm.params['T'].value * u.K,
+                lm.params['beta'].value,
+                lm.params['N'].value * u.cm**-2]
         if return_error:
-            perrs = [lm.params[0].stderr * u.K,
-                     lm.params[1].stderr,
-                     lm.params[2].stderr * u.cm**-2]
+            perrs = [lm.params['T'].stderr * u.K,
+                     lm.params['beta'].stderr,
+                     lm.params['N'].stderr * u.cm**-2]
 
             return pars, perrs
         else:
@@ -86,7 +104,8 @@ def fit_modified_bb(xdata, flux, error, guesses, fitter='lmfit',
 
 
 def fit_sed_mpfit_hz(xdata, flux, guesses=(0,0), err=None,
-                     blackbody_function='blackbody', quiet=True, **kwargs):
+                     blackbody_function='blackbody', quiet=True, sc=1e20,
+                     **kwargs):
     """
     Parameters
     ----------
@@ -103,6 +122,12 @@ def fit_sed_mpfit_hz(xdata, flux, guesses=(0,0), err=None,
         'modified_blackbody'
     quiet : bool
         quiet flag passed to mpfit
+    sc : float
+        A numerical parameter to enable the fitter to function properly.
+        It is unclear what values this needs to take, 1e20 seems to work
+        by bringing the units from erg/s/cm^2/Hz to Jy, i.e. bringing them
+        into the "of order 1" regime.  This does NOT affect the output *units*,
+        though it may affect the quality of the fit.
 
     Returns
     -------
@@ -127,7 +152,7 @@ def fit_sed_mpfit_hz(xdata, flux, guesses=(0,0), err=None,
     >>> tguess, bguess, nguess = 20.,2.,21.5
     >>> bbunit = u.erg/u.s/u.cm**2/u.Hz
     >>> mp = fit_sed_mpfit_hz(frequencies.to(u.Hz).value,
-    ...                       flux.to(bbunit).value, err=err.to(bbunit).value,
+    ...                       (flux+noise).to(bbunit).value, err=err.to(bbunit).value,
     ...                       blackbody_function='modified',
     ...                       guesses=(tguess, bguess, nguess))
     >>> print(mp.params)
@@ -149,10 +174,10 @@ def fit_sed_mpfit_hz(xdata, flux, guesses=(0,0), err=None,
     def mpfitfun(x,y,err):
         if err is None:
             def f(p,fjac=None):
-                return [0,(y-bbf(x, *p, normalize=False, **kwargs))]
+                return [0,(y*sc-bbf(x, *p, **kwargs)*sc)]
         else:
             def f(p,fjac=None):
-                return [0,(y-bbf(x, *p, normalize=False, **kwargs))/err]
+                return [0,(y*sc-bbf(x, *p, **kwargs)*sc)/(err*sc)]
         return f
 
     err = err if err is not None else flux*0.0 + 1.0
@@ -163,7 +188,8 @@ def fit_sed_mpfit_hz(xdata, flux, guesses=(0,0), err=None,
 
 
 def fit_sed_lmfit_hz(xdata, flux, guesses=(0,0), err=None,
-                     blackbody_function='blackbody', quiet=True, **kwargs):
+                     blackbody_function='blackbody', quiet=True, sc=1e20,
+                     **kwargs):
     """
     Parameters
     ----------
@@ -180,6 +206,12 @@ def fit_sed_lmfit_hz(xdata, flux, guesses=(0,0), err=None,
         'modified_blackbody'
     quiet : bool
         quiet flag passed to mpfit
+    sc : float
+        A numerical parameter to enable the fitter to function properly.
+        It is unclear what values this needs to take, 1e20 seems to work
+        by bringing the units from erg/s/cm^2/Hz to Jy, i.e. bringing them
+        into the "of order 1" regime.  This does NOT affect the output *units*,
+        though it may affect the quality of the fit.
 
     Returns
     -------
@@ -201,11 +233,11 @@ def fit_sed_lmfit_hz(xdata, flux, guesses=(0,0), err=None,
     >>> noise = np.random.randn(frequencies.size) * err
     >>> tguess, bguess, nguess = 20.,2.,21.5
     >>> bbunit = u.erg/u.s/u.cm**2/u.Hz
-    >>> lm = fit_sed_lmfit_hz(frequencies.to(u.Hz),
-                              flux.to(bbunit).value,
-                              err=err.to(bbunit).value,
-                              blackbody_function='modified',
-                              guesses=(tguess,bguess,nguess))
+    >>> lm = fit_sed_lmfit_hz(frequencies.to(u.Hz).value,
+    ...                       (flux+noise).to(bbunit).value,
+    ...                       err=err.to(bbunit).value,
+    ...                       blackbody_function='modified',
+    ...                       guesses=(tguess,bguess,nguess))
     >>> print(lm.params)
     
     >>> # If you want to fit for a fixed beta, do this:
@@ -214,7 +246,7 @@ def fit_sed_lmfit_hz(xdata, flux, guesses=(0,0), err=None,
     ...            for n,x in zip(('T','beta','N'),(20.,2.,21.5))]
     >>> parameters = lmfit.Parameters(OrderedDict(parlist))
     >>> parameters['beta'].vary = False
-    >>> lm = fit_sed_lmfit_hz(frequencies.to(u.Hz),
+    >>> lm = fit_sed_lmfit_hz(frequencies.to(u.Hz).value,
     ...                       flux.to(bbunit).value,
     ...                       err=err.to(bbunit).value,
     ...                       blackbody_function='modified',
@@ -232,14 +264,13 @@ def fit_sed_lmfit_hz(xdata, flux, guesses=(0,0), err=None,
 
     bbf = bbfd[blackbody_function]
 
-
     def lmfitfun(x,y,err):
         if err is None:
             def f(p):
-                return (y-bbf(x, *[p[par].value for par in p], **kwargs))
+                return (y*sc-bbf(x, *[p[par].value for par in p], **kwargs)*sc)
         else:
             def f(p):
-                return (y-bbf(x, *[p[par].value for par in p], **kwargs))/err
+                return (y*sc-bbf(x, *[p[par].value for par in p], **kwargs)*sc)/(err*sc)
         return f
 
     if not isinstance(guesses,lmfit.Parameters):
@@ -321,8 +352,9 @@ def fit_blackbody_montecarlo(frequency, flux, err=None,
     def luminosity(temperature=d['temperature'], beta=d['beta'],
                    scale=d['scale']):
 
+        from scipy.integrate import quad
         f = lambda nu: blackbody_function(nu, temperature, logN=scale,
-                                          beta=beta, normalize=False)
+                                          beta=beta)
         # integrate from 0.1 to 10,000 microns (100 angstroms to 1 cm)
         # some care should be taken; going from 0 to inf results in failure
         return quad(f, 1e4, 1e17)[0]
@@ -334,7 +366,7 @@ def fit_blackbody_montecarlo(frequency, flux, err=None,
                  beta=d['beta']):
         kwargs[scale_keyword] = scale
         y = blackbody_function(frequency, temperature, beta=beta,
-                               normalize=False, **kwargs)
+                               **kwargs)
         #print kwargs,beta,temperature,(-((y-flux)**2)).sum()
         return y
 
