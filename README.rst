@@ -15,7 +15,7 @@ Installation is through normal pip:
 
 .. code-block:: bash
 
-   pip install https://github.com/keflavich/dustmass/archive/master.zip
+   pip install https://github.com/keflavich/dust_emissivity/archive/master.zip
 
 
 Then, one can import:
@@ -28,12 +28,12 @@ Then, one can import:
 Documentation
 -------------
 
-There is an `example notebook <http://keflavich.github.io/dustmass/example/Luminosity.html>`_ and docstrings
+There is an `example notebook <http://keflavich.github.io/dust_emissivity/example/Luminosity.html>`_ and docstrings
 
 Github Things
 '''''''''''''
 
-.. image:: https://d2weczhvl823v0.cloudfront.net/keflavich/dustmass/trend.png
+.. image:: https://d2weczhvl823v0.cloudfront.net/keflavich/dust_emissivity/trend.png
    :alt: Bitdeli badge
    :target: https://bitdeli.com/free
 
