@@ -151,6 +151,9 @@ def integrate_sed(vmin, vmax, function=blackbody, **kwargs):
 
     fmin = vmin.to(u.Hz, u.spectral())
     fmax = vmax.to(u.Hz, u.spectral())
+    # quad must integrate from low to high freq
+    if fmin > fmax:
+        fmin,fmax = fmax,fmin
 
     bbunit = u.erg/u.s/u.cm**2/u.Hz
 
