@@ -163,8 +163,8 @@ def integrate_sed(vmin, vmax, function=blackbody, **kwargs):
     """
     from scipy.integrate import quad
 
-    fmin = vmin.to(u.Hz, u.spectral())
-    fmax = vmax.to(u.Hz, u.spectral())
+    fmin = vmin.to(u.Hz, u.spectral()).value
+    fmax = vmax.to(u.Hz, u.spectral()).value
     # quad must integrate from low to high freq
     if fmin > fmax:
         fmin,fmax = fmax,fmin
@@ -180,8 +180,7 @@ def integrate_sed(vmin, vmax, function=blackbody, **kwargs):
 
     intfunc = lambda nu: function(nu, *args)
 
-    result = quad(intfunc, fmin.to(u.Hz).value, fmax.to(u.Hz).value,
-                  full_output=True)
+    result = quad(intfunc, fmin, fmax, full_output=True)
 
     if len(result) == 3:
         integral,err,infodict = result
