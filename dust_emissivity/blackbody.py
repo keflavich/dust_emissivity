@@ -32,12 +32,16 @@ def _blackbody_hz(nu, temperature):
 
     return I
 
+def _bb_kwargs_to_args(temperature):
+    args = (temperature.to(u.K).value,)
+    return args
+
 def blackbody(nu, temperature, outunit=u.erg/u.s/u.cm**2/u.Hz):
     """
     Planck's Law Blackbody (Frequency units)
     """
-    I = _blackbody_hz(nu.to(u.Hz).value,
-                      temperature.to(u.K).value) * _bbunit_nu_cgs
+    args = _bb_kwargs_to_args(nu=nu, temperature=temperature)
+    I = _blackbody_hz(nu.to(u.Hz).value, *args) * _bbunit_nu_cgs
 
     return I.to(outunit)
 
@@ -72,6 +76,22 @@ def _modified_blackbody_hz(nu, temperature, beta, column, muh2=2.8, kappanu=None
     I = _blackbody_hz(nu, temperature)*modification
 
     return I
+
+def _modbb_kwargs_to_args(temperature, beta=1.75, column=1e22*u.cm**-2,
+                          muh2=2.8, kappanu=None, kappa0=4.0*u.cm**2*u.g**-1,
+                          nu0=505*u.GHz, dusttogas=100.,
+                          outunit=u.erg/u.s/u.cm**2/u.Hz):
+    if kappanu is not None:
+        kappanu = kappanu.to(u.cm**2/u.g).value
+
+    return (temperature.to(u.K).value,
+            beta,
+            column.to(u.cm**-2).value,
+            muh2,
+            kappanu,
+            kappa0.to(u.cm**2/u.g).value,
+            nu0.to(u.Hz).value,
+            dusttogas)
 
 def modified_blackbody(nu, temperature, beta=1.75, column=1e22*u.cm**-2,
                        muh2=2.8,
@@ -120,18 +140,12 @@ def modified_blackbody(nu, temperature, beta=1.75, column=1e22*u.cm**-2,
         The dust to gas ratio.  The opacity kappa0 is divided by this number to
         get the opacity of the dust
     """
-    if kappanu is not None:
-        kappanu = kappanu.to(u.cm**2/u.g).value
+    args = _modbb_kwargs_to_args(nu=nu, temperature=temperature, beta=beta,
+                                 column=column, muh2=muh2, kappanu=kappanu,
+                                 kappa0=kappa0, nu0=nu0, dusttogas=dusttogas)
 
-    I = _modified_blackbody_hz(nu.to(u.Hz).value,
-                               temperature.to(u.K).value,
-                               beta,
-                               column.to(u.cm**-2).value,
-                               muh2,
-                               kappanu,
-                               kappa0.to(u.cm**2/u.g).value,
-                               nu0.to(u.Hz).value,
-                               dusttogas)*_bbunit_nu_cgs
+    I = _modified_blackbody_hz(nu.to(u.Hz).value, *args)*_bbunit_nu_cgs
+
     return I.to(outunit)
 
 def integrate_sed(vmin, vmax, function=blackbody, **kwargs):
@@ -157,7 +171,14 @@ def integrate_sed(vmin, vmax, function=blackbody, **kwargs):
 
     bbunit = u.erg/u.s/u.cm**2/u.Hz
 
-    intfunc = lambda nu: function(nu*u.Hz, **kwargs).to(bbunit).value
+    if 'modified' in function.__name__:
+        args = _modbb_kwargs_to_args(**kwargs)
+        function = _modified_blackbody_hz
+    else:
+        args = _bb_kwargs_to_args(**kwargs)
+        function = _blackbody_hz
+
+    intfunc = lambda nu: function(nu, *args)
 
     result = quad(intfunc, fmin.to(u.Hz).value, fmax.to(u.Hz).value,
                   full_output=True)
