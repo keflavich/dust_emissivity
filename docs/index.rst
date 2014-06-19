@@ -1,13 +1,12 @@
 Documentation
 =============
 
-This is an affiliated package for the AstroPy package. The documentation for
-this package is here:
+Docs are here:
 
 .. toctree::
   :maxdepth: 2
 
-  packagename/index.rst
+  dust_emissivity/index.rst
 
 .. note:: Do not edit this page - instead, place all documentation for the
-          affiliated package inside ``packagename/``
+          affiliated package inside ``dust_emissivity/``
