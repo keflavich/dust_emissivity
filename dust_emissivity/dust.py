@@ -40,13 +40,13 @@ def snu(nu, column, kappa, temperature):
 def snudnu(nu, column, kappa, temperature, bandwidth):
     return snu(nu, column, kappa, temperature) * bandwidth
 
-def snuofmass(nu, mass, beamomega, distance=1*u.kpc, temperature=20*u.K):
+def snuofmass(nu, mass, beamomega, distance=1*u.kpc, temperature=20*u.K, **kwargs):
     """
     nu in Hz
     snu in Jy
     """
     column = mass.to(u.M_sun) / (beamomega * (distance**2))
-    tau = kappa(nu) * column * beamomega
+    tau = kappa(nu, **kwargs) * column * beamomega
     bnu = blackbody.blackbody(nu, temperature)
     snu = bnu * (1.0-exp(-tau))
     return snu.to(u.Jy)

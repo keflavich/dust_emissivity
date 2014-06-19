@@ -180,7 +180,7 @@ def fit_sed_mpfit_hz(xdata, flux, guesses=(0,0), err=None,
     >>> # T~14.9 K, beta ~1.79, column ~10^22
     """
     try:
-        import mpfit
+        from agpy import mpfit
     except ImportError:
         print("Cannot import mpfit: cannot use mpfit-based fitter.")
 
