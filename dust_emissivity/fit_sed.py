@@ -7,7 +7,8 @@ try:
 except ImportError:
     from ordereddict import OrderedDict
 
-from .blackbody import modified_blackbody, blackbody, _modified_blackbody_hz, _blackbody_hz
+from .blackbody import _modified_blackbody_hz, _blackbody_hz
+
 
 def fit_modified_bb(xdata, flux, error, guesses, fitter='lmfit',
                     return_error=False, **kwargs):
@@ -121,9 +122,7 @@ def fit_modified_bb(xdata, flux, error, guesses, fitter='lmfit',
         raise ValueError("Fitter type must be one of mpfit, lmfit, montecarlo")
 
 
-
-
-def fit_sed_mpfit_hz(xdata, flux, guesses=(0,0), err=None,
+def fit_sed_mpfit_hz(xdata, flux, guesses=(0, 0), err=None,
                      blackbody_function='blackbody', quiet=True, sc=1e20,
                      **kwargs):
     """
@@ -172,18 +171,19 @@ def fit_sed_mpfit_hz(xdata, flux, guesses=(0,0), err=None,
     >>> tguess, bguess, nguess = 20.,2.,21.5
     >>> bbunit = u.erg/u.s/u.cm**2/u.Hz
     >>> mp = fit_sed_mpfit_hz(frequencies.to(u.Hz).value,
-    ...                       (flux+noise).to(bbunit).value, err=err.to(bbunit).value,
+    ...                       (flux+noise).to(bbunit).value,
+    ...                       err=err.to(bbunit).value,
     ...                       blackbody_function='modified',
     ...                       guesses=(tguess, bguess, nguess))
     >>> print(mp.params)
     [ 14.99095224   1.78620237  22.05271119]
     >>> # T~14.9 K, beta ~1.79, column ~10^22
+
     """
     try:
         from agpy import mpfit
     except ImportError:
-        print("Cannot import mpfit: cannot use mpfit-based fitter.")
-
+        raise ValueError("Cannot import mpfit: cannot use mpfit-based fitter.")
 
     bbfd = {'blackbody': _blackbody_hz,
             'modified': _modified_blackbody_hz,
@@ -191,23 +191,23 @@ def fit_sed_mpfit_hz(xdata, flux, guesses=(0,0), err=None,
 
     bbf = bbfd[blackbody_function]
 
-    def mpfitfun(x,y,err):
+    def mpfitfun(x, y, err):
         if err is None:
-            def f(p,fjac=None):
-                return [0,(y*sc-bbf(x, *p, **kwargs)*sc)]
+            def f(p, fjac=None):
+                return [0, (y*sc-bbf(x, *p, **kwargs)*sc)]
         else:
-            def f(p,fjac=None):
-                return [0,(y*sc-bbf(x, *p, **kwargs)*sc)/(err*sc)]
+            def f(p, fjac=None):
+                return [0, (y*sc-bbf(x, *p, **kwargs)*sc)/(err*sc)]
         return f
 
     err = err if err is not None else flux*0.0 + 1.0
 
-    mp = mpfit.mpfit(mpfitfun(xdata,flux,err), guesses, quiet=quiet)
+    mp = mpfit.mpfit(mpfitfun(xdata, flux, err), guesses, quiet=quiet)
 
     return mp
 
 
-def fit_sed_lmfit_hz(xdata, flux, guesses=(0,0), err=None,
+def fit_sed_lmfit_hz(xdata, flux, guesses=(0, 0), err=None,
                      blackbody_function='blackbody', quiet=True, sc=1e20,
                      **kwargs):
     """
@@ -259,7 +259,7 @@ def fit_sed_lmfit_hz(xdata, flux, guesses=(0,0), err=None,
     ...                       blackbody_function='modified',
     ...                       guesses=(tguess,bguess,nguess))
     >>> print(lm.params)
-    
+
     >>> # If you want to fit for a fixed beta, do this:
     >>> import lmfit
     >>> parlist = [(n,lmfit.Parameter(x))
@@ -272,11 +272,12 @@ def fit_sed_lmfit_hz(xdata, flux, guesses=(0,0), err=None,
     ...                       blackbody_function='modified',
     ...                       guesses=parameters)
     >>> print(lm.params)
+
     """
     try:
         import lmfit
     except ImportError:
-        print("Cannot import lmfit: cannot use lmfit-based fitter.")
+        raise ImportError("Cannot import lmfit: cannot use lmfit-based fitter.")
 
     bbfd = {'blackbody': _blackbody_hz,
             'modified': _modified_blackbody_hz,
@@ -284,7 +285,7 @@ def fit_sed_lmfit_hz(xdata, flux, guesses=(0,0), err=None,
 
     bbf = bbfd[blackbody_function]
 
-    def lmfitfun(x,y,err):
+    def lmfitfun(x, y, err):
         if err is None:
             def f(p):
                 return (y*sc-bbf(x, *[p[par].value for par in p], **kwargs)*sc)
@@ -293,15 +294,15 @@ def fit_sed_lmfit_hz(xdata, flux, guesses=(0,0), err=None,
                 return (y*sc-bbf(x, *[p[par].value for par in p], **kwargs)*sc)/(err*sc)
         return f
 
-    if not isinstance(guesses,lmfit.Parameters):
-        parlist = [(n,lmfit.Parameter(value=x,name=n))
-                   for n,x in zip(('T','beta','N'),guesses)
+    if not isinstance(guesses, lmfit.Parameters):
+        parlist = [(n, lmfit.Parameter(value=x, name=n))
+                   for n, x in zip(('T', 'beta', 'N'), guesses)
                    ]
         guesspars = lmfit.Parameters(OrderedDict(parlist))
     else:
         guesspars = guesses
 
-    minimizer = lmfit.minimize(lmfitfun(xdata,np.array(flux),err), guesspars)
+    minimizer = lmfit.minimize(lmfitfun(xdata, np.array(flux), err), guesspars)
 
     return minimizer
 
@@ -348,7 +349,7 @@ def fit_modifiedbb_montecarlo(frequency, flux, err=None,
     try:
         import pymc
     except ImportError:
-        print("Cannot import pymc: cannot use pymc-based fitter.")
+        raise ImportError("Cannot import pymc: cannot use pymc-based fitter.")
 
     blackbody_function = _modified_blackbody_hz
 
@@ -357,13 +358,12 @@ def fit_modifiedbb_montecarlo(frequency, flux, err=None,
                                                   min_temperature,
                                                   max_temperature,
                                                   value=temperature_guess)
-    d['column'] = pymc.distributions.Uniform('column',0,max_column,
+    d['column'] = pymc.distributions.Uniform('column', 0, max_column,
                                              value=column_guess)
     if beta_guess is not None:
-        d['beta'] = pymc.distributions.Uniform('beta',0,10, value=beta_guess)
+        d['beta'] = pymc.distributions.Uniform('beta', 0, 10, value=beta_guess)
     else:
-        d['beta'] = pymc.distributions.Uniform('beta',0,0, value=0)
-
+        d['beta'] = pymc.distributions.Uniform('beta', 0, 0, value=0)
 
     @pymc.deterministic
     def luminosity(temperature=d['temperature'], beta=d['beta'],
@@ -383,22 +383,23 @@ def fit_modifiedbb_montecarlo(frequency, flux, err=None,
                  beta=d['beta']):
         y = blackbody_function(frequency, temperature, beta=beta,
                                column=column, **kwargs)
-        #print kwargs,beta,temperature,(-((y-flux)**2)).sum()
+        # print kwargs,beta,temperature,(-((y-flux)**2)).sum()
         return y
 
     d['bb_model'] = bb_model
 
     if err is None:
-        d['err'] = pymc.distributions.Uninformative('error',value=1.)
+        d['err'] = pymc.distributions.Uninformative('error', value=1.)
     else:
-        d['err'] = pymc.distributions.Uninformative('error',value=err,observed=True)
+        d['err'] = pymc.distributions.Uninformative('error', value=err,
+                                                    observed=True)
 
     d['flux'] = pymc.distributions.Normal('flux', mu=d['bb_model'],
                                           tau=1./d['err']**2, value=flux,
                                           observed=True)
 
     MC = pymc.MCMC(d)
-    
+
     if nsamples > 0:
         MC.sample(nsamples, burn=burn)
         if return_MC:
@@ -411,8 +412,8 @@ def fit_modifiedbb_montecarlo(frequency, flux, err=None,
 
         if beta_guess is not None:
             beta = MCfit.beta.value
-            return T,column,beta
+            return T, column, beta
         else:
-            return T,column
+            return T, column
 
     return MC
