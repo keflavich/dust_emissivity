@@ -25,6 +25,17 @@ Then, one can import:
    import dust_emissivity
    from dust_emissivity import blackbody, modified_blackbody, integrate_sed
 
+Dependencies
+------------
+
+  * astropy
+  * numpy
+  * scipy
+
+  * agpy (optional)
+  * lmfit (optional)
+  * pymc (optional)
+
 Documentation
 -------------
 
