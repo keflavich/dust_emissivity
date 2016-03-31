@@ -5,6 +5,7 @@ python:
     - 2.7
     - 3.3
     - 3.4
+    - 3.5
 
 # Setting sudo to false opts in to Travis-CI container-based builds.
 sudo: false
@@ -29,7 +30,7 @@ env:
         - NUMPY_VERSION=1.9
         - ASTROPY_VERSION=stable
         - SETUP_CMD='test'
-        - PIP_DEPENDENCIES=''
+        - PIP_DEPENDENCIES='ordereddict lmfit'
         # For this package-template, we include examples of Cython modules,
         # so Cython is required for testing. If your package does not include
         # Cython code, you can set CONDA_DEPENDENCIES=''
