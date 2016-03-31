@@ -51,7 +51,7 @@ def snuofmass(nu, mass, beamomega, distance=1*u.kpc, temperature=20*u.K, **kwarg
     snu = bnu * (1.0-exp(-tau))
     return snu.to(u.Jy)
 
-def tauofsnu(nu, snu, beamomega, temperature=20*u.K):
+def tauofsnu(nu, snu, temperature=20*u.K):
     """
     nu in GHz
     snu in Jy
@@ -65,7 +65,8 @@ def colofsnu(nu, snu, beamomega, temperature=20*u.K, muh2=2.8, **kwargs):
     column = tau / kappa(nu,**kwargs) / constants.m_p / muh2 / beamomega
     return column
 
-def massofsnu(nu, snu, beamomega, distance=1*u.kpc, temperature=20*u.K, muh2=2.8, beta=1.75):
-    col = colofsnu(nu, snu, beamomega, temperature, beta=beta)
-    mass = col * constants.m_p * muh2 * beamomega * (distance)**2 
+def massofsnu(nu, snu, distance=1*u.kpc, temperature=20*u.K, muh2=2.8, beta=1.75):
+    # beamomega divides out: set it to 1
+    col = colofsnu(nu, snu, 1, temperature, beta=beta)
+    mass = col * constants.m_p * muh2 * (distance)**2
     return mass.to(u.M_sun)
