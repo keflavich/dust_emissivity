@@ -61,7 +61,7 @@ def tauofsnu(nu, snu, temperature=20*u.K):
     return tau
 
 def colofsnu(nu, snu, beamomega, temperature=20*u.K, muh2=2.8, **kwargs):
-    tau = tauofsnu(nu,snu,beamomega,temperature=temperature)
+    tau = tauofsnu(nu,snu,temperature=temperature)
     column = tau / kappa(nu,**kwargs) / constants.m_p / muh2 / beamomega
     return column
 
