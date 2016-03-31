@@ -61,12 +61,12 @@ def tauofsnu(nu, snu, temperature=20*u.K):
     return tau
 
 def colofsnu(nu, snu, beamomega, temperature=20*u.K, muh2=2.8, **kwargs):
-    tau = tauofsnu(nu,snu,temperature=temperature)
-    column = tau / kappa(nu,**kwargs) / constants.m_p / muh2 / beamomega
+    tau = tauofsnu(nu=nu, snu=snu, temperature=temperature)
+    column = tau / kappa(nu=nu,**kwargs) / constants.m_p / muh2 / beamomega
     return column
 
 def massofsnu(nu, snu, distance=1*u.kpc, temperature=20*u.K, muh2=2.8, beta=1.75):
     # beamomega divides out: set it to 1
-    col = colofsnu(nu, snu, 1, temperature, beta=beta)
+    col = colofsnu(nu=nu, snu=snu, beamomega=1, temperature=temperature, beta=beta)
     mass = col * constants.m_p * muh2 * (distance)**2
     return mass.to(u.M_sun)
