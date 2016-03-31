@@ -4,10 +4,33 @@ from astropy.tests.helper import pytest
 from ..blackbody import modified_blackbody
 from ..fit_sed import fit_modified_bb
 
+installed = {}
+
+try:
+    import mpfit
+    installed['mpfit'] = True
+except ImportError:
+    installed['mpfit'] = False
+
+try:
+    import lmfit
+    installed['lmfit'] = True
+except ImportError:
+    installed['lmfit'] = False
+
+try:
+    import pymc
+    installed['montecarlo'] = True
+except ImportError:
+    installed['montecarlo'] = False
+
 @pytest.mark.parametrize(('fitter','precision'),
                          zip(('lmfit','mpfit','montecarlo'),
                              (8,8,2)))
 def test_fit_modified_bb(fitter, precision):
+    if not installed[fitter]:
+        # substitute for pytest.mark.skipif because I don't know how to parametrize that
+        return
     wavelengths = np.array([20,70,160,250,350,500,850,1100]) * u.um
     frequencies = wavelengths.to(u.Hz, u.spectral())
     temperature = 15 * u.K
