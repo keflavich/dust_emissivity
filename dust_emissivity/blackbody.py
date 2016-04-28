@@ -107,6 +107,9 @@ def modified_blackbody(nu, temperature, beta=1.75, column=1e22*u.cm**-2,
 
     nu0 and nu must have same units!
 
+    (outunit should have 1/sr too, but that is left out because steradians are
+    usually treated as unitless.  Also, it would break some of my code...)
+
     Parameters
     ----------
     nu : float
@@ -116,13 +119,8 @@ def modified_blackbody(nu, temperature, beta=1.75, column=1e22*u.cm**-2,
     beta : float
         The blackbody modification value; the blackbody function is multiplied
         by :math:`(1-exp(-(\\nu/\\nu_0)**\\beta))`
-    logN : float
-        The log column density to be fit
-    logscale : float
-        An arbitrary logarithmic scale to apply to the blackbody function
-        before passing it to mpfit; this is meant to prevent numerical
-        instability when attempting to fit very small numbers.
-        Can also be used to represent, e.g., steradians
+    column : float
+        the column density
     muh2 : float
         The mass (in amu) per molecule of H2.  Defaults to 2.8.
     units : 'cgs' or 'mks'
@@ -133,9 +131,6 @@ def modified_blackbody(nu, temperature, beta=1.75, column=1e22*u.cm**-2,
         The opacity in cm^2/g *for gas* at nu0 (see dusttogas)
     nu0 : float
         The frequency at which the opacity power law is locked
-    normalize : function or None
-        A normalization function for the blackbody.  Set to None if you're
-        interested in the amplitude of the blackbody
     dusttogas : float
         The dust to gas ratio.  The opacity kappa0 is divided by this number to
         get the opacity of the dust
@@ -162,7 +157,7 @@ def integrate_sed(vmin, vmax, function=blackbody, **kwargs):
 
     Returns
     -------
-    The SED integrated in units of 
+    The SED integrated in units of
     ``bbunit = u.erg/u.s/u.cm**2``
     """
     from scipy.integrate import quad
@@ -182,7 +177,8 @@ def integrate_sed(vmin, vmax, function=blackbody, **kwargs):
         args = _bb_kwargs_to_args(**kwargs)
         function = _blackbody_hz
 
-    intfunc = lambda nu: function(nu, *args)
+    def intfunc(nu):
+        return function(nu, *args)
 
     result = quad(intfunc, fmin, fmax, full_output=True)
 
