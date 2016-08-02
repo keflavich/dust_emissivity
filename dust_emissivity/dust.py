@@ -42,6 +42,8 @@ def snudnu(nu, column, kappa, temperature, bandwidth):
 
 def snuofmass(nu, mass, beamomega, distance=1*u.kpc, temperature=20*u.K, **kwargs):
     """
+    Flux density for a given mass and beam area
+
     nu in Hz
     snu in Jy
     """
@@ -51,18 +53,18 @@ def snuofmass(nu, mass, beamomega, distance=1*u.kpc, temperature=20*u.K, **kwarg
     snu = bnu * (1.0-exp(-tau))
     return snu.to(u.Jy)
 
-def tauofsnu(nu, snu, temperature=20*u.K):
+def tauofsnu(nu, snu, beamomega, temperature=20*u.K):
     """
     nu in GHz
     snu in Jy
     """
-    bnu = blackbody.blackbody(nu, temperature)
+    bnu = blackbody.blackbody(nu, temperature) * beamomega.sr.value
     tau = -log(1-snu / bnu)
     return tau
 
 def colofsnu(nu, snu, beamomega, temperature=20*u.K, muh2=2.8, **kwargs):
-    tau = tauofsnu(nu=nu, snu=snu, temperature=temperature)
-    column = tau / kappa(nu=nu,**kwargs) / constants.m_p / muh2 / beamomega.sr.value
+    tau = tauofsnu(nu=nu, snu=snu, beamomega=beamomega, temperature=temperature)
+    column = tau / kappa(nu=nu,**kwargs) / constants.m_p / muh2
     return column
 
 def massofsnu(nu, snu, distance=1*u.kpc, temperature=20*u.K, muh2=2.8, beta=1.75):
