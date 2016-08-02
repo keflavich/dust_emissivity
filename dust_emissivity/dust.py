@@ -65,10 +65,13 @@ def tauofsnu(nu, snu, beamomega, temperature=20*u.K):
 def colofsnu(nu, snu, beamomega, temperature=20*u.K, muh2=2.8, **kwargs):
     tau = tauofsnu(nu=nu, snu=snu, beamomega=beamomega, temperature=temperature)
     column = tau / kappa(nu=nu,**kwargs) / constants.m_p / muh2
-    return column
+    return column.to(u.cm**-2)
 
-def massofsnu(nu, snu, distance=1*u.kpc, temperature=20*u.K, muh2=2.8, beta=1.75):
-    # beamomega divides out: set it to 1
-    col = colofsnu(nu=nu, snu=snu, beamomega=1, temperature=temperature, beta=beta)
+def massofsnu(nu, snu, distance=1*u.kpc, temperature=20*u.K, muh2=2.8, beta=1.75,
+              beamomega=1*u.sr):
+    # beamomega matters if the optical depth is high.  Bigger beam = lower
+    # optical depth
+    col = colofsnu(nu=nu, snu=snu, beamomega=beamomega,
+                   temperature=temperature, beta=beta)
     mass = col * constants.m_p * muh2 * (distance)**2
     return mass.to(u.M_sun)
