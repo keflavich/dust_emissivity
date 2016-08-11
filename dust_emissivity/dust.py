@@ -58,7 +58,10 @@ def tauofsnu(nu, snu, beamomega, temperature=20*u.K):
     nu in GHz
     snu in Jy
     """
-    bnu = blackbody.blackbody(nu, temperature) * beamomega.sr.value
+    beamomega = (beamomega.sr.value if hasattr(beamomega, 'sr') else
+                 beamomega.to(u.sr).value if hasattr(beamomega, 'to') else
+                 beamomega)
+    bnu = blackbody.blackbody(nu, temperature) * beamomega
     tau = -log(1-snu / bnu)
     return tau
 
@@ -73,5 +76,8 @@ def massofsnu(nu, snu, distance=1*u.kpc, temperature=20*u.K, muh2=2.8, beta=1.75
     # optical depth
     col = colofsnu(nu=nu, snu=snu, beamomega=beamomega,
                    temperature=temperature, beta=beta)
-    mass = col * constants.m_p * muh2 * (distance)**2
+    beamomega = (beamomega.sr.value if hasattr(beamomega, 'sr') else
+                 beamomega.to(u.sr).value if hasattr(beamomega, 'to') else
+                 beamomega)
+    mass = col * constants.m_p * muh2 * (distance)**2 * beamomega
     return mass.to(u.M_sun)
