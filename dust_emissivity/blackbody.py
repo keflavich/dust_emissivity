@@ -19,8 +19,8 @@ _k_B = constants.k_B.cgs.value
 _m_p = constants.m_p.cgs.value
 
 # Globally define the unit of the blackbody function in CGS
-_bbunit_nu_cgs = u.erg/u.s/u.cm**2/u.Hz
-_bbunit_lam_cgs = u.erg/u.s/u.cm**2/u.cm
+_bbunit_nu_cgs = u.erg/u.s/u.cm**2/u.Hz/u.sr
+_bbunit_lam_cgs = u.erg/u.s/u.cm**2/u.cm/u.sr
 
 
 def _blackbody_hz(nu, temperature):
@@ -36,7 +36,7 @@ def _bb_kwargs_to_args(temperature):
     args = (temperature.to(u.K).value,)
     return args
 
-def blackbody(nu, temperature, outunit=u.erg/u.s/u.cm**2/u.Hz):
+def blackbody(nu, temperature, outunit=u.erg/u.s/u.cm**2/u.Hz/u.sr):
     """
     Planck's Law Blackbody (Frequency units)
     """
@@ -53,7 +53,7 @@ def _blackbody_wavelength_cm(lam, temperature):
     I = (2*_h*_c**2 / lam**5 * (exp(_h*_c/(_k_B*temperature*lam)) - 1)**-1)
     return I
 
-def blackbody_wavelength(lam, temperature, outunit=u.erg/u.s/u.cm**2/u.AA):
+def blackbody_wavelength(lam, temperature, outunit=u.erg/u.s/u.cm**2/u.AA/u.sr):
     I = _blackbody_wavelength_cm(lam.to(u.cm).value,
                                  temperature.to(u.K).value) * _bbunit_lam_cgs
 
@@ -98,7 +98,7 @@ def modified_blackbody(nu, temperature, beta=1.75, column=1e22*u.cm**-2,
                        kappanu=None,
                        kappa0=4.0*u.cm**2*u.g**-1,
                        nu0=505*u.GHz, dusttogas=100.,
-                       outunit=u.erg/u.s/u.cm**2/u.Hz):
+                       outunit=u.erg/u.s/u.cm**2/u.Hz/u.sr):
     """
     Snu =  2hnu^3 c^-2  (e^(hnu/kT) - 1)^-1  (1 - e^(-tau_nu) )
     Kappa0 and Nu0 are set as per http://arxiv.org/abs/1101.4654 which uses OH94 values.
