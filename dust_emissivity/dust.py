@@ -141,12 +141,10 @@ def snuofmass(nu, mass, beamomega, distance=1*u.kpc, temperature=20*u.K, **kwarg
 def tauofsnu(nu, snu, beamomega, temperature=20*u.K):
     """
     nu in GHz
-    snu in Jy
+    snu in Jy/sr
     """
-    beamomega = (beamomega.sr.value if hasattr(beamomega, 'sr') else
-                 beamomega.to(u.sr).value if hasattr(beamomega, 'to') else
-                 beamomega)
-    bnu = blackbody.blackbody(nu, temperature) * beamomega
+    beamomega = u.Quantity(beamomega, u.sr)
+    bnu = blackbody.blackbody(nu, temperature) / (4 * np.pi * u.sr)
     tau = -log(1-snu / bnu)
     return tau
 
