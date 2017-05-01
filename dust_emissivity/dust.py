@@ -80,7 +80,9 @@ def planck_average_kappa_table(temperature, weighting=blackbody.blackbody,
 
     bb = weighting(frequencies[argsort][:-1], temperature)
 
-    integral = (bb * absorption[argsort][:-1] * dnu).sum()
+    # integrate over solid angle first, which is irrelevant as it's only a
+    # weight, then integrate over frequency, which matters.
+    integral = (4*np.pi*u.sr * bb * absorption[argsort][:-1] * dnu).sum()
 
     if normalization == 'blackbody':
         norm = constants.sigma_sb.cgs * temperature**4
@@ -125,20 +127,25 @@ def snu(nu, column, kappa, temperature):
 def snudnu(nu, column, kappa, temperature, bandwidth):
     return snu(nu, column, kappa, temperature) * bandwidth
 
-def snuofmass(nu, mass, beamomega, distance=1*u.kpc, temperature=20*u.K, **kwargs):
+def snuofmass(nu, mass, beamomega=1*u.sr, distance=1*u.kpc, temperature=20*u.K,
+              **kwargs):
     """
     Flux density for a given mass and beam area
+    (is generally independent of beam area, so it is set to a default value of
+    1 sr)
 
     nu in Hz
     snu in Jy
     """
-    column = mass.to(u.M_sun) / (beamomega * (distance**2))
-    tau = kappa(nu, **kwargs) * column * beamomega
+    beamomega = u.Quantity(beamomega, u.sr)
+    effective_area = (beamomega * (distance**2)).to(u.cm**2, u.dimensionless_angles())
+    column = (mass / effective_area).to(u.cm**-2*u.g)
+    tau = kappa(nu, **kwargs) * column
     bnu = blackbody.blackbody(nu, temperature)
-    snu = bnu * (1.0-exp(-tau))
+    snu = bnu * (1.0-exp(-tau)) * beamomega
     return snu.to(u.Jy)
 
-def tauofsnu(nu, snu, temperature=20*u.K):
+def tauofsnu(nu, snu_per_beam, temperature=20*u.K):
     """
     nu in GHz
     snu in Jy/sr
@@ -147,17 +154,19 @@ def tauofsnu(nu, snu, temperature=20*u.K):
     tau = -log(1-snu / bnu)
     return tau
 
-def colofsnu(nu, snu, temperature=20*u.K, muh2=2.8, **kwargs):
-    tau = tauofsnu(nu=nu, snu=snu, temperature=temperature)
+def colofsnu(nu, snu_per_beam, temperature=20*u.K, muh2=2.8, **kwargs):
+    tau = tauofsnu(nu=nu, snu=snu_per_beam, temperature=temperature)
     column = tau / kappa(nu=nu,**kwargs) / constants.m_p / muh2
     return column.to(u.cm**-2)
 
-def massofsnu(nu, snu, distance=1*u.kpc, temperature=20*u.K, muh2=2.8, beta=1.75):
+def massofsnu(nu, snu, distance=1*u.kpc, temperature=20*u.K, muh2=2.8,
+              beta=1.75, beamomega=1*u.sr):
     # beamomega matters if the optical depth is high.  Bigger beam = lower
     # optical depth.
-    # However, we actually want to assume optically thin, so we use 1sr
-    col = colofsnu(nu=nu, snu=snu/u.sr, temperature=temperature, beta=beta)
-    beamomega = u.Quantity(1, u.sr)
+    # However, we actually want to assume optically thin, so we use 1 sr by
+    # default
+    beamomega = u.Quantity(beamomega, u.sr)
+    col = colofsnu(nu=nu, snu=snu/beamomega, temperature=temperature, beta=beta)
     effective_area = ((distance)**2 * beamomega).to(u.cm**2, u.dimensionless_angles())
     mass = col * constants.m_p * muh2 * effective_area
     return mass.to(u.M_sun)
