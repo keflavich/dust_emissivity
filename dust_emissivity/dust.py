@@ -151,7 +151,7 @@ def tauofsnu(nu, snu_per_beam, temperature=20*u.K):
     snu in Jy/sr
     """
     bnu = blackbody.blackbody(nu, temperature)
-    tau = -log(1-snu / bnu)
+    tau = -log(1-snu_per_beam / bnu)
     return tau
 
 def colofsnu(nu, snu_per_beam, temperature=20*u.K, muh2=2.8, **kwargs):
