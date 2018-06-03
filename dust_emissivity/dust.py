@@ -20,6 +20,10 @@ def kappa(nu, nu0=271.1*u.GHz, kappa0=0.0114*u.cm**2*u.g**-1, beta=1.75):
 
     $$ \kappa = \kappa_0 \left(\\frac{\\nu}{\\nu_0}\\right)^{\\beta} $$
 
+    The default kappa=0.0114 at 271.1 GHz comes from extrapolating the
+    Ossenkopf & Henning 1994 opacities for the thin-ice-mantle, 10^6 year model
+    anchored at 1.0 mm with an assumed beta of 1.75.
+
     Parameters
     ----------
     nu: astropy.Quantity [u.spectral() equivalent]
@@ -37,9 +41,16 @@ def kappa(nu, nu0=271.1*u.GHz, kappa0=0.0114*u.cm**2*u.g**-1, beta=1.75):
 
 def kappa_table(nu, url='http://www2.mpia-hd.mpg.de/homes/henning/Dust_opacities/Opacities/Ralf/Pol/0__comp.Gofn'):
     """
-    Use an opacity table to compute kappa
+    Use an opacity table to compute kappa.  The default is:
+    olivine+iron+orthopyroxene+troilite+refractory organics+volatile organics+water ice
+    see http://www2.mpia-hd.mpg.de/home/henning/Dust_opacities/Opacities/Ralf/pol_comp.html
+        
 
     (does not work well with integrals-  results in an error)
+
+    Other tables can be found at:
+        https://hera.ph1.uni-koeln.de/~ossk/Jena/tables.html
+        http://www2.mpia-hd.mpg.de/home/henning/Dust_opacities/Opacities/Ralf/pol.html
     """
     if os.path.exists(os.path.basename(url)):
         tbl = Table.read(os.path.basename(url), format='ascii.basic')
