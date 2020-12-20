@@ -29,11 +29,3 @@ Documentation
 -------------
 
 There is an `example notebook <http://keflavich.github.io/dust_emissivity/example/Luminosity.html>`_ and docstrings
-
-Github Things
-'''''''''''''
-
-.. image:: https://d2weczhvl823v0.cloudfront.net/keflavich/dust_emissivity/trend.png
-   :alt: Bitdeli badge
-   :target: https://bitdeli.com/free
-
