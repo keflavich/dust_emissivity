@@ -35,4 +35,6 @@ Citing
 ------
 
 We have a Zenodo DOI you can reference:
-[![DOI](https://zenodo.org/badge/14066933.svg)](https://zenodo.org/badge/latestdoi/14066933)
+
+.. image:: https://zenodo.org/badge/14066933.svg
+   :target: https://zenodo.org/badge/latestdoi/14066933
