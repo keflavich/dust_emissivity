@@ -29,3 +29,10 @@ Documentation
 -------------
 
 There is an `example notebook <http://keflavich.github.io/dust_emissivity/example/Luminosity.html>`_ and docstrings
+
+
+Citing
+------
+
+We have a Zenodo DOI you can reference:
+[![DOI](https://zenodo.org/badge/14066933.svg)](https://zenodo.org/badge/latestdoi/14066933)
