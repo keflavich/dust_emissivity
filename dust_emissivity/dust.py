@@ -44,7 +44,7 @@ def kappa_table(nu, url='http://www2.mpia-hd.mpg.de/homes/henning/Dust_opacities
     Use an opacity table to compute kappa.  The default is:
     olivine+iron+orthopyroxene+troilite+refractory organics+volatile organics+water ice
     see http://www2.mpia-hd.mpg.de/home/henning/Dust_opacities/Opacities/Ralf/pol_comp.html
-        
+
 
     (does not work well with integrals-  results in an error)
 
@@ -108,7 +108,7 @@ def planck_average_kappa(temperature, kappa=kappa, **kwargs):
     """
     Compute the Blackbody-weighted opacity assuming a power law dust
     absorptivity
-    
+
     THIS IS NOT PRESENTLY SANE: the opacity doesn't continue as a power law past ~100um
     """
     def kappabb(nu):
