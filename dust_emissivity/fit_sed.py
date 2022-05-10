@@ -298,7 +298,8 @@ def fit_sed_lmfit_hz(xdata, flux, guesses=(0,0), err=None,
                    for n,x in zip(('T','beta','N'),guesses)
                    ]
         guesspars = lmfit.Parameters()
-        guesspars.update(OrderedDict(parlist),)
+        for par in parlist:
+            guesspars.add_many(par)
     else:
         guesspars = guesses
 
