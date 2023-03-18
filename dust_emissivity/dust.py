@@ -21,8 +21,8 @@ def kappa(nu, nu0=271.1*u.GHz, kappa0=0.0114*u.cm**2*u.g**-1, beta=1.75):
     $$ \kappa = \kappa_0 \left(\\frac{\\nu}{\\nu_0}\\right)^{\\beta} $$
 
     The default kappa=0.0114 at 271.1 GHz comes from extrapolating the
-    Ossenkopf & Henning 1994 opacities for the thin-ice-mantle, 10^6 year model
-    anchored at 1.0 mm with an assumed beta of 1.75.
+    Ossenkopf & Henning 1994 opacities for the thin-ice-mantle, 10^6 cm^-3,
+    10^5 year model anchored at 1.0 mm with an assumed beta of 1.75.
 
     Parameters
     ----------
