@@ -166,19 +166,25 @@ def tauofsnu(nu, snu_per_beam, temperature=20*u.K):
     return tau
 
 def colofsnu(nu, snu_per_beam, temperature=20*u.K, muh2=2.8, **kwargs):
+    """
+    kwargs are passed to kappa, not tau (tau doesn't accept any)
+    """
     tau = tauofsnu(nu=nu, snu_per_beam=snu_per_beam, temperature=temperature)
-    column = tau / kappa(nu=nu,**kwargs) / constants.m_p / muh2
+    column = tau / kappa(nu=nu, **kwargs) / constants.m_p / muh2
     return column.to(u.cm**-2)
 
 def massofsnu(nu, snu, distance=1*u.kpc, temperature=20*u.K, muh2=2.8,
-              beta=1.75, beamomega=1*u.sr):
+              beta=1.75, beamomega=1*u.sr, **kwargs):
+    """
+    kwargs are passed to colofsnu
+    """
     # beamomega matters if the optical depth is high.  Bigger beam = lower
     # optical depth.
     # However, we actually want to assume optically thin, so we use 1 sr by
     # default
     beamomega = u.Quantity(beamomega, u.sr)
     col = colofsnu(nu=nu, snu_per_beam=snu/beamomega, temperature=temperature,
-                   beta=beta)
+                   beta=beta, **kwargs)
     effective_area = ((distance)**2 * beamomega).to(u.cm**2, u.dimensionless_angles())
     mass = col * constants.m_p * muh2 * effective_area
     return mass.to(u.M_sun)
