@@ -58,7 +58,7 @@ def fit_modified_bb(xdata, flux, error, guesses, fitter='lmfit',
     ...                        guesses=(tguess, bguess, nguess))
     """
 
-    bbunit = u.erg/u.cm**2/u.s/u.Hz
+    bbunit = u.erg/u.cm**2/u.s/u.Hz/u.sr
     x = xdata.to(u.Hz).value
     fx = flux.to(bbunit).value
     err = error.to(bbunit).value if error is not None else None
