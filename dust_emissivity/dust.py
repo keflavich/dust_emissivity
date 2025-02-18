@@ -15,10 +15,10 @@ from scipy.integrate import quad
 
 def kappa(nu, nu0=271.1*u.GHz, kappa0=0.0114*u.cm**2*u.g**-1, beta=1.75):
     """
-    Compute the opacity $\kappa$ given a reference frequency (or wavelength)
+    Compute the opacity $\\kappa$ given a reference frequency (or wavelength)
     and a power law governing the opacity as a fuction of frequency:
 
-    $$ \kappa = \kappa_0 \left(\\frac{\\nu}{\\nu_0}\\right)^{\\beta} $$
+    $$ \\kappa = \\kappa_0 \left(\\frac{\\nu}{\\nu_0}\\right)^{\\beta} $$
 
     The default kappa=0.0114 at 271.1 GHz comes from extrapolating the
     Ossenkopf & Henning 1994 opacities for the thin-ice-mantle, 10^6 cm^-3,
@@ -29,7 +29,7 @@ def kappa(nu, nu0=271.1*u.GHz, kappa0=0.0114*u.cm**2*u.g**-1, beta=1.75):
     nu: astropy.Quantity [u.spectral() equivalent]
         The frequency at which to evaluate kappa
     nu0: astropy.Quantity [u.spectral() equivalent]
-        The reference frequency at which $\kappa$ is defined
+        The reference frequency at which $\\kappa$ is defined
     kappa0: astropy.Quantity [cm^2/g]
         The dust opacity per gram of H2 along the line of sight.  Because of
         the H2 conversion, this factor implicitly includes a dust to gas ratio
