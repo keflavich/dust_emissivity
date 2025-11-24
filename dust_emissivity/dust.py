@@ -60,11 +60,19 @@ def kappa_table(nu, url='http://www2.mpia-hd.mpg.de/homes/henning/Dust_opacities
             fh.write(response.text)
         tbl = Table.read(response.text, format='ascii.basic')
 
-    wavelengths = tbl["'lambda[um]"]*u.um
+    if 'lambda[um]' in tbl.columns:
+        wavelengths = tbl["lambda[um]"]*u.um
+    else:
+        # some tables lack headers
+        wavelengths = tbl[tbl.colnames[0]]*u.um
     frequencies = wavelengths.to(u.Hz, u.spectral())
     argsort = np.argsort(frequencies)
 
-    absorption = tbl["<Kabs>"]*u.cm**2/u.g
+    if '<Kabs>' in tbl.columns:
+        absorption = tbl["<Kabs>"]*u.cm**2/u.g
+    else:
+        # some tables lack headers
+        absorption = tbl[tbl.colnames[1]]*u.cm**2/u.g
 
     return np.interp(nu.to(u.Hz).value, frequencies[argsort].value,
                      absorption[argsort].value)*u.cm**2/u.g
